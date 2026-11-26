@@ -20,6 +20,11 @@ final class MediaService
         'application/pdf' => 'pdf',
     ];
 
+    /** 中身は同じ形式だが別の名前で判定されるもの（iPhone・iTunes の M4V は MP4 として扱う） */
+    private const MIME_ALIASES = [
+        'video/x-m4v' => 'video/mp4',
+    ];
+
     public const THUMB_SIZE = 600;
     public const MEDIUM_SIZE = 1280;
 
@@ -71,14 +76,37 @@ final class MediaService
             throw new RuntimeException("ファイルサイズが上限（{$maxLabel}）を超えています。");
         }
 
-        $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+        return self::store($tmp, (string) ($file['name'] ?? ''), $userId, true, null);
+    }
+
+    /**
+     * サーバー上のファイルをメディアとして取り込む（他システムからの移行用）。
+     * アップロードのサイズ上限は適用しない。元ファイルはコピーするだけで変更しない。
+     *
+     * @param string|null $createdAt 登録日時（"Y-m-d H:i:s"）。保存先の年/月フォルダにも使う
+     * @throws RuntimeException
+     */
+    public static function importFile(string $src, string $originalName, ?int $userId, ?string $createdAt = null): array
+    {
+        if (!is_file($src) || filesize($src) === 0) {
+            throw new RuntimeException('ファイルがないか空です: ' . $src);
+        }
+        return self::store($src, $originalName, $userId, false, $createdAt);
+    }
+
+    /** ファイルを保存先に置き、画像なら加工して、media テーブルに登録する */
+    private static function store(string $src, string $originalName, ?int $userId, bool $isUpload, ?string $createdAt): array
+    {
+        $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($src);
+        $mime = self::MIME_ALIASES[$mime] ?? $mime;
         if (!isset(self::TYPES[$mime])) {
             throw new RuntimeException('このファイル形式には対応していません（画像: JPEG/PNG/GIF/WebP、動画: MP4/WebM/MOV、PDF）。');
         }
         $ext = self::TYPES[$mime];
         $kind = str_starts_with($mime, 'image/') ? 'image' : (str_starts_with($mime, 'video/') ? 'video' : 'file');
 
-        $sub = date('Y/m');
+        $ts = $createdAt !== null ? (strtotime($createdAt) ?: time()) : time();
+        $sub = date('Y/m', $ts);
         $dir = self::dir() . '/' . $sub;
         if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
             throw new RuntimeException('保存先フォルダを作成できません。');
@@ -86,7 +114,8 @@ final class MediaService
         $name = bin2hex(random_bytes(12));
         $rel = "$sub/$name.$ext";
         $abs = self::absPath($rel);
-        if (!move_uploaded_file($tmp, $abs)) {
+        $saved = $isUpload ? move_uploaded_file($src, $abs) : copy($src, $abs);
+        if (!$saved) {
             throw new RuntimeException('ファイルを保存できませんでした。');
         }
 
@@ -108,8 +137,8 @@ final class MediaService
         db_exec(
             'INSERT INTO media (path, thumb_path, medium_path, original_name, mime, kind, size, width, height, uploaded_by, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$rel, $thumb, $medium, self::cleanName((string) ($file['name'] ?? ''), $ext), $mime, $kind,
-             (int) filesize($abs), $width, $height, $userId, now()]
+            [$rel, $thumb, $medium, self::cleanName($originalName, $ext), $mime, $kind,
+             (int) filesize($abs), $width, $height, $userId, date('Y-m-d H:i:s', $ts)]
         );
         return db_one('SELECT * FROM media WHERE id = ?', [(int) db()->lastInsertId()])
             ?? throw new RuntimeException('保存に失敗しました。');
