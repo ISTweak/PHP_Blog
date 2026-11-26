@@ -7,6 +7,10 @@
  *
  * オプション:
  *   --uploads=DIR    WordPress の wp-content/uploads フォルダ（画像・動画も取り込む場合）
+ *   --nextgen=DIR    NextGEN Gallery の写真フォルダ（uploads/ngg-originals や wp-content/gallery）。
+ *                    [imagely id="N"] などをギャラリー N の写真一覧に変換する
+ *   --attachment-map=FILE  メディアライブラリから消えた添付ファイルの対応表（1 行に「ID,uploads からの相対パス」）。
+ *                    [gallery ids="..."] の画像が XML に無いときに、uploads に残ったファイルを使う
  *   --create-users   ブログに該当ユーザーがいない投稿者を、AD ユーザー（投稿者ロール）として事前登録する
  *                    （WordPress のログイン名＝AD のログオン名と想定）。付けない場合は --author のユーザーの記事になる
  *   --author=NAME    投稿者が見つからないときに使うブログのユーザー名（省略時は最初の管理者）
@@ -32,11 +36,11 @@ if (PHP_SAPI !== 'cli') {
  * ------------------------------------------------------------------ */
 
 $xmlFile = null;
-$opt = ['uploads' => null, 'create-users' => false, 'author' => null, 'dry-run' => false, 'reconvert' => false];
+$opt = ['uploads' => null, 'nextgen' => null, 'attachment-map' => null, 'create-users' => false, 'author' => null, 'dry-run' => false, 'reconvert' => false];
 foreach (array_slice($argv, 1) as $arg) {
     if (in_array($arg, ['--create-users', '--dry-run', '--reconvert'], true)) {
         $opt[substr($arg, 2)] = true;
-    } elseif (preg_match('/^--(uploads|author)=(.*)$/', $arg, $m)) {
+    } elseif (preg_match('/^--(uploads|author|nextgen|attachment-map)=(.*)$/', $arg, $m)) {
         $opt[$m[1]] = $m[2];
     } elseif (str_starts_with($arg, '--')) {
         fwrite(STDERR, "不明なオプション: $arg\n");
@@ -52,6 +56,11 @@ if ($xmlFile === null || !is_file($xmlFile)) {
 $uploadsDir = $opt['uploads'] !== null ? rtrim(str_replace('\\', '/', $opt['uploads']), '/') : null;
 if ($uploadsDir !== null && !is_dir($uploadsDir)) {
     fwrite(STDERR, "uploads フォルダがありません: {$opt['uploads']}\n");
+    exit(1);
+}
+$nextgenDir = $opt['nextgen'] !== null ? rtrim(str_replace('\\', '/', $opt['nextgen']), '/') : null;
+if ($nextgenDir !== null && !is_dir($nextgenDir)) {
+    fwrite(STDERR, "NextGEN のフォルダがありません: {$opt['nextgen']}\n");
     exit(1);
 }
 
@@ -154,6 +163,39 @@ foreach ($channel->item as $it) {
         'open'     => (string) $w->comment_status === 'open',
         'sticky'   => (int) $w->is_sticky === 1,
     ];
+}
+
+// メディアライブラリから消えた添付ファイルを、対応表（ID,uploads からの相対パス）で補う
+if ($opt['attachment-map'] !== null) {
+    $lines = @file($opt['attachment-map'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        fwrite(STDERR, "対応表を読み込めません: {$opt['attachment-map']}\n");
+        exit(1);
+    }
+    $mapped = 0;
+    foreach ($lines as $line) {
+        if (str_starts_with(trim($line), '#') || !preg_match('/^\s*(\d+)\s*[,\t]\s*(.+?)\s*$/u', $line, $mm)) {
+            continue;
+        }
+        [$aid, $rel] = [(int) $mm[1], str_replace('\\', '/', $mm[2])];
+        if (isset($attachments[$aid])) {
+            continue;   // XML にある添付ファイルはそちらを優先
+        }
+        $file = $uploadsDir !== null && is_file("$uploadsDir/$rel") ? "$uploadsDir/$rel" : null;
+        $attachments[$aid] = ['url' => '', 'rel' => $rel, 'file' => $file, 'date' => '', 'name' => basename($rel)];
+        $byRel[$rel] = $aid;
+        $mapped++;
+        if ($file === null) {
+            echo "  対応表のファイルがありません: ID $aid → $rel\n";
+        }
+    }
+    echo "対応表から補った添付ファイル: {$mapped} 件\n";
+}
+
+/** NextGEN の写真の取り込み記録用キー（NextGEN フォルダからの相対パス） */
+function ngg_key(string $file, ?string $base): string
+{
+    return $base !== null && str_starts_with($file, $base . '/') ? substr($file, strlen($base) + 1) : basename($file);
 }
 
 /** glob のパターンで特別な意味を持つ文字をエスケープ */
@@ -282,6 +324,33 @@ if ($uploadsDir !== null) {
 }
 $extraNew = array_diff_key($extraFiles, $importLog['files']);
 
+// NextGEN Gallery：[imagely id="N"] などの N をギャラリー番号とみなし、そのフォルダの写真を使う
+// （wp-content/uploads/ngg-originals/<ハッシュ>/N/ や wp-content/gallery/<名前>/ の形に対応）
+$importLog += ['ngg' => []];
+$nggPlan = [];      // ギャラリー番号 => [ファイルの絶対パス, ...]（ファイル名順）
+if ($nextgenDir !== null) {
+    foreach ($posts as $p) {
+        preg_match_all('#\[(?:imagely|ngg|ngg_images|nggallery)\b[^\]]*?\b(?:id|ids|gallery_ids)="?(\d+)#', $p['content'], $m);
+        foreach ($m[1] as $gid) {
+            if (isset($nggPlan[$gid])) {
+                continue;
+            }
+            $found = [];
+            foreach (["$nextgenDir/*/$gid", "$nextgenDir/$gid"] as $pattern) {
+                foreach (glob($pattern, GLOB_ONLYDIR) ?: [] as $dir) {
+                    foreach (scandir($dir) ?: [] as $f) {
+                        if (preg_match('/\.(jpe?g|png|gif|webp)(_backup)?$/i', $f)) {
+                            $found[] = "$dir/$f";
+                        }
+                    }
+                }
+            }
+            natcasesort($found);
+            $nggPlan[$gid] = array_values($found);
+        }
+    }
+}
+
 // 既に取り込み済みの記事
 $newPosts =array_values(array_filter($posts, static fn($p) => !isset($importLog['posts'][$p['wp_id']])));
 
@@ -308,6 +377,10 @@ if (count($mediaStats['missing']) > 30) {
 if ($extraFiles) {
     printf("  元ファイルの代わりに縮小版を使うもの: %d 件\n", count($extraFiles));
 }
+foreach ($nggPlan as $gid => $list) {
+    $doneN = count(array_filter($list, static fn($f) => isset($importLog['ngg'][ngg_key($f, $nextgenDir)])));
+    printf("NextGEN ギャラリー %s: 写真 %d 枚（取り込み済み %d 枚）\n", $gid, count($list), $doneN);
+}
 
 if ($opt['dry-run']) {
     // 本文変換の警告だけ確認する（メディア ID は仮）
@@ -320,7 +393,8 @@ if ($opt['dry-run']) {
     $fakeFiles = array_map(static fn() => ['id' => 0, 'medium' => false, 'kind' => 'image'], $extraFiles);
     $warn = [];
     foreach ($newPosts as $p) {
-        convert_content($p['content'], $fake, $byRel, $warn, $p['title'], $fakeFiles);
+        convert_content($p['content'], $fake, $byRel, $warn, $p['title'], $fakeFiles,
+            array_map(static fn($list) => array_fill(0, count($list), 0), $nggPlan));
     }
     print_warnings($warn);
     echo "\n--dry-run のため、何も書き込んでいません。\n";
@@ -412,6 +486,38 @@ foreach ($extraFiles as $rel => $login) {
 }
 $saveLog();
 
+// NextGEN ギャラリーの写真
+$ngg = [];          // ギャラリー番号 => [新メディア ID, ...]
+foreach ($nggPlan as $gid => $list) {
+    $ngg[$gid] = [];
+    $n = 0;
+    foreach ($list as $file) {
+        $key = ngg_key($file, $nextgenDir);
+        $id = $importLog['ngg'][$key] ?? null;
+        if ($id !== null && !db_val('SELECT 1 FROM media WHERE id = ?', [$id])) {
+            $id = null;
+        }
+        if ($id === null) {
+            try {
+                $name = (string) preg_replace('/_backup$/i', '', basename($file));
+                $row = MediaService::importFile($file, $name, (int) $fallback['id'], null);
+            } catch (Throwable $e) {
+                echo "  NextGEN の写真を取り込めません: {$key}（{$e->getMessage()}）\n";
+                continue;
+            }
+            $id = (int) $row['id'];
+            $importLog['ngg'][$key] = $id;
+            $done++;
+            if (++$n % 50 === 0) {
+                $saveLog();
+                printf("  NextGEN ギャラリー %s: %d / %d\n", $gid, $n, count($list));
+            }
+        }
+        $ngg[$gid][] = (int) $id;
+    }
+    $saveLog();
+}
+
 // 3. カテゴリー
 $catIds = [];
 foreach (Repo::categories() as $c) {
@@ -447,7 +553,7 @@ if ($opt['reconvert']) {
         if ($postId === null) {
             continue;
         }
-        $content = convert_content($p['content'], $media, $byRel, $warn, $p['title'], $files);
+        $content = convert_content($p['content'], $media, $byRel, $warn, $p['title'], $files, $ngg);
         $eyecatch = $p['thumb'] && isset($media[$p['thumb']]) && $media[$p['thumb']]['kind'] === 'image' ? $media[$p['thumb']]['id'] : null;
         // ブログで編集された記事（updated_at が変わっている）は上書きしない
         $reconverted += db_exec('UPDATE posts SET content = ?, eyecatch_media_id = COALESCE(?, eyecatch_media_id) WHERE id = ? AND updated_at = ?',
@@ -461,7 +567,7 @@ foreach ($newPosts as $p) {
     $primary = $names[0] ?? null;
     $tagNames = Repo::parseTags(implode(',', array_merge(array_slice($names, 1), $p['tags'])));
 
-    $content = convert_content($p['content'], $media, $byRel, $warn, $p['title'], $files);
+    $content = convert_content($p['content'], $media, $byRel, $warn, $p['title'], $files, $ngg);
     $eyecatch = $p['thumb'] && isset($media[$p['thumb']]) && $media[$p['thumb']]['kind'] === 'image' ? $media[$p['thumb']]['id'] : null;
 
     $pdo->beginTransaction();
@@ -501,7 +607,7 @@ print_warnings($warn);
 /**
  * @param array $media WordPress ID => ['id', 'medium', 'kind']
  */
-function convert_content(string $html, array $media, array $byRel, array &$warn, string $title, array $files = []): string
+function convert_content(string $html, array $media, array $byRel, array &$warn, string $title, array $files = [], array $ngg = []): string
 {
     $html = str_replace(["\r\n", "\r"], "\n", $html);
     // ブロックエディターのコメント
@@ -568,9 +674,16 @@ function convert_content(string $html, array $media, array $byRel, array &$warn,
         return "\n\n<video src=\"$url\" controls preload=\"metadata\" playsinline></video>\n\n";
     }, $html);
 
-    // 変換できないショートコード
-    $html = (string) preg_replace_callback('#\[(imagely|ngg|ngg_images|nggallery|slideshow)\b[^\]]*\]#', static function ($m) use (&$warn, $title) {
-        $warn[] = "$title: [{$m[1]}] は変換できないため削除しました";
+    // NextGEN Gallery（取り込んだ写真があればギャラリーに、無ければ削除）
+    $html = (string) preg_replace_callback('#\[(imagely|ngg|ngg_images|nggallery|slideshow)\b[^\]]*\]#', static function ($m) use (&$warn, $title, $ngg) {
+        if (preg_match('/\b(?:id|ids|gallery_ids)="?(\d+)/', $m[0], $g) && !empty($ngg[$g[1]])) {
+            $items = '';
+            foreach ($ngg[$g[1]] as $mid) {
+                $items .= '<a href="/media/' . $mid . '"><img src="/media/' . $mid . '/thumb" alt=""></a>';
+            }
+            return "\n\n<div class=\"gallery\">$items</div>\n\n";
+        }
+        $warn[] = "$title: [{$m[1]}] のギャラリーが見つからないため削除しました（--nextgen でフォルダを指定してください）";
         return '';
     }, $html);
 
