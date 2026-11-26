@@ -1,0 +1,16 @@
+# 環境ごとの設定（セットアップキーや AD の接続先を含むため公開しない）
+# → include/config.sample.php をコピーして作成する
+/include/config.php
+
+# 実行時に自動で作られるデータ（DB・バックアップ・アップロード・セッション・ログ）
+/include/data/
+
+# サイト固有の画像（ロゴなど）
+/public/assets/img/
+
+# OS・エディタ
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
