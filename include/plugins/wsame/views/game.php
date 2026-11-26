@@ -1,12 +1,12 @@
 <?php
 /**
  * @var PluginApi $api
- * @var WsameGame $g
+ * @var MiniGame $g
  */
 ?>
 <div class="layout">
   <div class="layout__main">
-    <?= $api->render('_tabs', ['g' => $g, 'current' => 'game']) ?>
+    <?= render('games/_tabs', ['g' => $g, 'current' => 'game']) ?>
 
     <div class="ws" data-ws data-img="<?= e($api->url('/plugin-assets/' . $api->id . '/img/')) ?>">
       <div class="mg-stats" aria-live="polite">
@@ -71,7 +71,7 @@
         </dd>
         <dt>ランキング</dt>
         <dd>
-          ゲームオーバーになったとき、今月の上位 <?= WsameGame::RANK ?> 位に入っていれば、ログインしている人はコメントを付けて記録できます。<br>
+          ゲームオーバーになったとき、今月の上位 <?= MiniGame::RANK ?> 位に入っていれば、コメントを付けて記録できます（ログインしていない人は名前も入れます）。<br>
           同じスコアのときは、先に記録した人が上になります。
         </dd>
       </dl>

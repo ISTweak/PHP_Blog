@@ -2,8 +2,6 @@
 .pz-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; margin-bottom: 1rem; }
 .pz-size { display: flex; align-items: center; gap: .5rem; font-weight: 600; font-size: .9rem; }
 .pz-size .form-control { width: auto; }
-.pz-stats { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin-bottom: 1rem; font-size: .92rem; color: var(--c-muted); }
-.pz-stats strong { color: var(--c-text); font-variant-numeric: tabular-nums; }
 
 .pz-board {
   --n: 4;
@@ -26,5 +24,6 @@
 .pz-tile.is-empty { background: transparent; cursor: default; }
 .pz-board.is-solved .pz-tile:not(.is-empty) { background: #dcfce7; color: #166534; }
 
-.pz-message { margin: 1rem 0 0; padding: .8rem 1rem; text-align: center; font-weight: 700; color: #166534; background: #dcfce7; border-radius: var(--radius-sm); }
-.pz-widget { margin: .6rem 0 0; }
+.pz-message { margin: 1rem auto 0; max-width: 420px; padding: .8rem 1rem; text-align: center; font-weight: 700; color: #166534; background: #dcfce7; border-radius: var(--radius-sm); }
+.pz-message[hidden] { display: none; }
+.pz-message p { margin: 0 0 .6rem; }

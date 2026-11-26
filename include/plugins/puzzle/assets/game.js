@@ -1,4 +1,4 @@
-/* 15 パズル（スライドパズル） */
+/* 15 パズル（スライドパズル）。完成したら結果を送ってランキングへ */
 (() => {
   'use strict';
   const board = document.querySelector('[data-pz-board]');
@@ -10,6 +10,8 @@
   const timeEl = document.querySelector('[data-pz-time]');
   const bestEl = document.querySelector('[data-pz-best]');
   const msgEl = document.querySelector('[data-pz-message]');
+  const msgText = document.querySelector('[data-pz-message-text]');
+  const form = document.querySelector('[data-pz-form]');
 
   let n = 4;
   let tiles = [];      // tiles[位置] = 数字（0 は空き）
@@ -17,6 +19,8 @@
   let startedAt = 0;
   let timer = null;
   let solved = false;
+  let finishedTime = 0;
+  let submitted = false;
 
   const fmt = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
   const bestKey = () => `pz-best-${n}`;
@@ -107,7 +111,8 @@
     const isBest = !best || moves < best.moves || (moves === best.moves && time < best.time);
     if (isBest) saveBest({ moves, time });
     showBest();
-    msgEl.textContent = `完成！ ${moves} 手 / ${fmt(time)}${isBest ? '（自己ベスト更新）' : ''}`;
+    finishedTime = time;
+    msgText.textContent = `完成！ ${moves} 手 / ${fmt(time)}${isBest ? '（自己ベスト更新）' : ''}`;
     msgEl.hidden = false;
   }
 
@@ -117,6 +122,7 @@
     moves = 0;
     startedAt = 0;
     solved = false;
+    submitted = false;
     timeEl.textContent = fmt(0);
     msgEl.hidden = true;
     shuffle();
@@ -139,6 +145,15 @@
   });
 
   newBtn.addEventListener('click', newGame);
+  document.querySelector('[data-pz-again]').addEventListener('click', newGame);
+  document.querySelector('[data-pz-submit]').addEventListener('click', () => {
+    if (!solved || submitted) return;
+    submitted = true;
+    form.elements.score.value = moves;
+    form.elements.stage.value = n;
+    form.elements.gametime.value = finishedTime;
+    form.submit();
+  });
   sizeSel.addEventListener('change', newGame);
   newGame();
 })();

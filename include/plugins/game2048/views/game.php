@@ -1,12 +1,12 @@
 <?php
 /**
  * @var PluginApi $api
- * @var Game2048Game $g
+ * @var MiniGame $g
  */
 ?>
 <div class="layout">
   <div class="layout__main">
-    <?= $api->render('_tabs', ['g' => $g, 'current' => 'game']) ?>
+    <?= render('games/_tabs', ['g' => $g, 'current' => 'game']) ?>
 
     <div class="g2" data-g2>
       <div class="g2-top">
@@ -61,7 +61,7 @@
         <dd>合体してできたタイルの数字が、そのまま得点になります（4 を作ると 4 点、2048 を作ると 2048 点）。</dd>
         <dt>ランキング</dt>
         <dd>
-          ゲームオーバーになったとき、今月の上位 <?= Game2048Game::RANK ?> 位に入っていれば、ログインしている人はコメントを付けて記録できます。<br>
+          ゲームオーバーになったとき、今月の上位 <?= MiniGame::RANK ?> 位に入っていれば、コメントを付けて記録できます（ログインしていない人は名前も入れます）。<br>
           同じスコアのときは、先に記録した人が上になります。
         </dd>
       </dl>

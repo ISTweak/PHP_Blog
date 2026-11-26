@@ -3,26 +3,30 @@
  * サンプルプラグイン：15 パズル（ミニゲーム）
  *
  * - /games/puzzle でスライドパズルが遊べる（3×3 / 4×4 / 5×5）
- * - 自己ベストはブラウザに保存
- * - サイドバーにゲームへのリンクを表示
+ * - 完成したら、今月の上位 20 位に入るとランキングに記録できる（サイズごと。手数が少ないほど上位）
+ * - /games/puzzle/ranking で今月／これまでのランキング。サイドバーに 4×4 の今月の上位 3 人
  */
 declare(strict_types=1);
 
 return [
     'name'        => '15 パズル',
-    'version'     => '1.0.0',
-    'description' => 'ちょっとした息抜き用のスライドパズルです。プラグインで JavaScript を使ったページを追加する例でもあります。',
+    'version'     => '1.1.0',
+    'description' => 'ちょっとした息抜き用のスライドパズルです。サイズごとの手数ランキングつき。',
     'author'      => 'PHP_Blog',
 
+    'install' => static fn(PluginApi $api) => MiniGame::install($api),
+
     'boot' => static function (PluginApi $api): void {
-        $api->navLink('ミニゲーム', '/games/puzzle');
-
-        $api->get('/games/puzzle', static function () use ($api): void {
-            $api->addStyle('puzzle.css');
-            $api->addScript('puzzle.js');
-            $api->view('game', [], '15 パズル');
-        });
-
-        $api->widget('ミニゲーム', static fn(): string => $api->render('widget'), 90);
+        (new MiniGame($api, [
+            'title'          => '15 パズル',
+            'path'           => '/games/puzzle',
+            'scoreLabel'     => '手数',
+            'unit'           => '手',
+            'lowerIsBetter'  => true,
+            'variants'       => ['3' => '3×3', '4' => '4×4', '5' => '5×5'],
+            'defaultVariant' => '4',
+            'maxScore'       => 999_999,
+            'order'          => 90,
+        ]))->register();
     },
 ];
