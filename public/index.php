@@ -12,6 +12,14 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = request_path();
 $GLOBALS['__path'] = $path;
 
+// プラグインの静的ファイル（public/assets と同じく誰でも取得可能）
+if (str_starts_with($path, '/plugin-assets/')) {
+    Plugins::serveAsset($path);
+}
+
+// 有効なプラグインを起動（ページ・ウィジェット・メニューの登録）
+Plugins::boot();
+
 // アクセス制御
 if (str_starts_with($path, '/admin')) {
     require_login();
@@ -79,5 +87,12 @@ $r->get('/admin/users', [AdminUserController::class, 'index']);
 $r->post('/admin/users', [AdminUserController::class, 'store']);
 $r->post('/admin/users/{id}', [AdminUserController::class, 'update']);
 $r->post('/admin/users/{id}/delete', [AdminUserController::class, 'destroy']);
+
+$r->get('/admin/plugins', [AdminPluginController::class, 'index']);
+$r->post('/admin/plugins/{id}/enable', [AdminPluginController::class, 'enable']);
+$r->post('/admin/plugins/{id}/disable', [AdminPluginController::class, 'disable']);
+
+// プラグインのページ（本体のルートが優先される）
+Plugins::registerRoutes($r);
 
 $r->dispatch($method, $path);

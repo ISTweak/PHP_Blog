@@ -15,8 +15,10 @@ $nav = [
     ['/admin/comments', 'コメント', 'editor', false],
     ['/admin/users', 'ユーザー', 'admin', false],
     ['/admin/settings', 'サイト設定', 'admin', false],
+    ['/admin/plugins', 'プラグイン', 'admin', false],
     ['/admin/account', 'アカウント', 'author', false],
 ];
+$pluginMenu = Plugins::adminMenu();
 $isActive = static function (string $href, bool $exact) use ($path): bool {
     if ($exact) {
         return $path === $href;
@@ -38,6 +40,10 @@ $isActive = static function (string $href, bool $exact) use ($path): bool {
 <link rel="stylesheet" href="<?= e(asset('css/base.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/admin.css')) ?>">
 <script src="<?= e(asset('js/admin.js')) ?>" defer></script>
+<?php foreach (Plugins::styles() as $href): ?><link rel="stylesheet" href="<?= e($href) ?>">
+<?php endforeach; ?>
+<?php foreach (Plugins::scripts() as $src): ?><script src="<?= e($src) ?>" defer></script>
+<?php endforeach; ?>
 </head>
 <body class="adm"
       data-media-list="<?= e(url('/admin/media/list')) ?>"
@@ -74,6 +80,14 @@ $isActive = static function (string $href, bool $exact) use ($path): bool {
         </li>
       <?php endforeach; ?>
     </ul>
+    <?php if ($pluginMenu): ?>
+      <p class="adm-nav__heading">プラグイン</p>
+      <ul class="adm-nav">
+        <?php foreach ($pluginMenu as $item): ?>
+          <li><a class="adm-nav__link<?= $isActive($item['path'], false) ? ' is-active' : '' ?>" href="<?= e(url($item['path'])) ?>"><?= e($item['label']) ?></a></li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
     <p class="adm-sidebar__mode"><?= App::isPrivate() ? '会員限定サイト' : '一般公開サイト' ?></p>
   </nav>
   <div class="adm-backdrop" data-sidebar-close></div>

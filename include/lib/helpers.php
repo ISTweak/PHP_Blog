@@ -136,7 +136,12 @@ function json_response(array $data, int $status = 200): never
 
 function render(string $template, array $vars = []): string
 {
-    $__file = INC . '/views/' . $template . '.php';
+    return render_file(INC . '/views/' . $template . '.php', $vars);
+}
+
+/** 任意のパスのテンプレートを描画（プラグインのテンプレート用） */
+function render_file(string $__file, array $vars = []): string
+{
     extract($vars, EXTR_SKIP);
     ob_start();
     try {

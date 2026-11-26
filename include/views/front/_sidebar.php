@@ -50,4 +50,11 @@ $maxCnt = $sideTags ? max(array_map(static fn($t) => (int) $t['cnt'], $sideTags)
     </ul>
   </section>
   <?php endif; ?>
+
+  <?php foreach (Plugins::widgets() as $w): ?>
+  <section class="widget widget--plugin widget--<?= e($w['plugin']) ?>">
+    <h2 class="widget__title"><?= e($w['title']) ?></h2>
+    <?= $w['html'] ?>
+  </section>
+  <?php endforeach; ?>
 </aside>

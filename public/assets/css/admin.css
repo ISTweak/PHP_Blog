@@ -282,3 +282,14 @@
 .comment-admin__post { margin: .25rem 0 .5rem; font-size: .82rem; color: var(--c-muted); }
 .comment-admin__body { font-size: .92rem; line-height: 1.75; }
 .comment-admin__actions { display: flex; gap: .4rem; margin-top: .75rem; }
+
+/* ---------- プラグイン ---------- */
+.adm-nav__heading { margin: 1rem .8rem .35rem; font-size: .75rem; font-weight: 700; letter-spacing: .08em; color: var(--c-muted); }
+.plugin-list { display: grid; gap: .75rem; }
+.plugin-card { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .75rem 1rem; padding: 1rem 1.2rem; background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.plugin-card.is-enabled { border-left: 3px solid var(--c-primary); }
+.plugin-card__body { flex: 1 1 320px; min-width: 0; }
+.plugin-card__name { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0 0 .3rem; font-size: 1.05rem; }
+.plugin-card__desc { margin: 0 0 .3rem; font-size: .92rem; }
+.plugin-card__meta { margin: 0; }
+.plugin-card .alert { margin: .6rem 0 0; }

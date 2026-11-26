@@ -18,6 +18,10 @@ $pageTitle = isset($title) && $title !== '' && $title !== null ? $title . ' | ' 
 <link rel="stylesheet" href="<?= e(asset('css/base.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/site.css')) ?>">
 <script src="<?= e(asset('js/site.js')) ?>" defer></script>
+<?php foreach (Plugins::styles() as $href): ?><link rel="stylesheet" href="<?= e($href) ?>">
+<?php endforeach; ?>
+<?php foreach (Plugins::scripts() as $src): ?><script src="<?= e($src) ?>" defer></script>
+<?php endforeach; ?>
 </head>
 <body class="site">
 <header class="site-header">
@@ -36,6 +40,9 @@ $pageTitle = isset($title) && $title !== '' && $title !== null ? $title . ' | ' 
         <li><a class="site-nav__link" href="<?= e(url('/')) ?>">ホーム</a></li>
         <?php foreach ($navCats as $c): ?>
           <li><a class="site-nav__link" href="<?= e(category_url($c['slug'])) ?>"><?= e($c['name']) ?></a></li>
+        <?php endforeach; ?>
+        <?php foreach (Plugins::navLinks() as $link): ?>
+          <li><a class="site-nav__link" href="<?= e(url($link['path'])) ?>"><?= e($link['label']) ?></a></li>
         <?php endforeach; ?>
       </ul>
       <div class="site-nav__tools">
