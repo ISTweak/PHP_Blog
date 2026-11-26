@@ -95,3 +95,7 @@
   .bb-admin-table td.actions { flex-direction: row; }
   .bb-admin-table td.actions .btn { width: auto; }
 }
+.bb-w-next__date { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.bb-w-next__team { font-weight: 600; color: var(--c-muted); }
+.bb-w-next__venue .bb-comp { margin-right: .3rem; }
+.bb-w-next__comment { margin-top: .3rem !important; font-size: .82rem; }

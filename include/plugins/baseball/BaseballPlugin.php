@@ -24,7 +24,8 @@ final class BaseballPlugin
         $a->navLink('試合日程', '/baseball');
         $a->get('/baseball', fn() => $this->index());
         $a->adminPage('', '試合日程・結果', fn() => $this->admin(), 'author');
-        $a->widget('試合日程・結果', fn() => $this->widget(), 30);
+        $a->widget('次の試合', fn() => $this->widgetNext(), 30);
+        $a->widget('試合結果', fn() => $this->widgetResults(), 31);
     }
 
     /* ================= 閲覧側 ================= */
@@ -56,18 +57,22 @@ final class BaseballPlugin
         ], '試合日程・結果');
     }
 
-    private function widget(): string
+    /** サイドバー「次の試合」（試合が無くてもブロックは表示する） */
+    private function widgetNext(): string
     {
-        $upcoming = $this->upcoming();
-        $recent = db_all("SELECT * FROM {$this->t} WHERE status = 'final' ORDER BY game_date DESC, start_time DESC, id DESC LIMIT 3");
-        if (!$upcoming && !$recent) {
-            return '';
-        }
         $this->api->addStyle('baseball.css');
-        return $this->api->render('widget', [
-            'team'   => $this->team(),
-            'next'   => $upcoming[0] ?? null,
-            'recent' => $recent,
+        return $this->api->render('widget-next', [
+            'team' => $this->team(),
+            'next' => $this->upcoming()[0] ?? null,
+        ]);
+    }
+
+    /** サイドバー「試合結果」：直近 3 試合と今年の成績 */
+    private function widgetResults(): string
+    {
+        $this->api->addStyle('baseball.css');
+        return $this->api->render('widget-results', [
+            'recent' => db_all("SELECT * FROM {$this->t} WHERE status = 'final' ORDER BY game_date DESC, start_time DESC, id DESC LIMIT 3"),
             'record' => $this->record((int) date('Y')),
             'year'   => (int) date('Y'),
         ]);
