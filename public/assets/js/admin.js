@@ -636,4 +636,30 @@
     userForm.addEventListener('change', sync);
     sync();
   }
+
+  /* ---------- 並び順の変更（サイト設定のサイドバー） ---------- */
+
+  document.querySelectorAll('[data-order-list]').forEach((list) => {
+    const refresh = () => {
+      const items = [...list.children];
+      items.forEach((li, i) => {
+        li.querySelector('[data-move="up"]').disabled = i === 0;
+        li.querySelector('[data-move="down"]').disabled = i === items.length - 1;
+      });
+    };
+    list.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-move]');
+      if (!btn) return;
+      const li = btn.closest('li');
+      if (btn.dataset.move === 'up' && li.previousElementSibling) {
+        li.previousElementSibling.before(li);
+      } else if (btn.dataset.move === 'down' && li.nextElementSibling) {
+        li.nextElementSibling.after(li);
+      }
+      refresh();
+      // 押したボタンにフォーカスを残す（端に着いて押せなくなったら反対側へ）
+      (btn.disabled ? li.querySelector('[data-move]:not(:disabled)') : btn)?.focus();
+    });
+    refresh();
+  });
 })();

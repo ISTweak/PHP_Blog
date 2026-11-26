@@ -171,12 +171,19 @@ final class Plugins
 
     public static function addWidget(string $plugin, string $title, Closure $render, int $order, string $access): void
     {
-        self::$widgets[] = compact('plugin', 'title', 'render', 'order', 'access');
+        $key = 'plugin:' . $plugin . ':' . $title;      // 並び順・表示の設定に使う
+        self::$widgets[] = compact('key', 'plugin', 'title', 'render', 'order', 'access');
     }
 
     public static function addNavLink(string $plugin, string $label, string $path, string $access): void
     {
-        self::$navLinks[] = compact('plugin', 'label', 'path', 'access');
+        $key = 'plugin:' . $plugin . ':' . $path;       // ヘッダーの表示設定に使う
+        self::$navLinks[] = compact('key', 'plugin', 'label', 'path', 'access');
+    }
+
+    private static function pluginName(string $id): string
+    {
+        return (string) (self::$manifests[$id]['name'] ?? $id);
     }
 
     public static function addStyle(string $url): void
@@ -262,18 +269,43 @@ final class Plugins
         return $items;
     }
 
+    /** ヘッダーに表示するリンク（権限があり、サイト設定で非表示にしていないもの） */
     public static function navLinks(): array
     {
-        return array_values(array_filter(self::$navLinks, static fn($l) => self::canAccess($l['access'])));
+        $hidden = Layout::hiddenNav();
+        return array_values(array_filter(self::$navLinks,
+            static fn($l) => self::canAccess($l['access']) && !in_array($l['key'], $hidden, true)));
     }
 
-    /** サイドバーに表示するウィジェット（描画済み HTML） */
+    /** 登録されているヘッダーのリンクすべて（サイト設定の画面用） */
+    public static function navDefs(): array
+    {
+        return array_map(static fn($l) => [
+            'key' => $l['key'], 'label' => $l['label'], 'path' => $l['path'], 'pluginName' => self::pluginName($l['plugin']),
+        ], self::$navLinks);
+    }
+
+    /** 登録されているウィジェットすべて（並び順の初期値＝order 順。サイト設定の画面用） */
+    public static function widgetDefs(): array
+    {
+        $widgets = self::$widgets;
+        usort($widgets, static fn($a, $b) => $a['order'] <=> $b['order']);
+        return array_map(static fn($w) => [
+            'key' => $w['key'], 'title' => $w['title'], 'plugin' => $w['plugin'], 'pluginName' => self::pluginName($w['plugin']),
+        ], $widgets);
+    }
+
+    /**
+     * サイドバーに表示するウィジェット（描画済み HTML）。キー => 内容。
+     * 並び順は Layout::sidebar() が決める。
+     */
     public static function widgets(): array
     {
-        $widgets = array_filter(self::$widgets, static fn($w) => self::canAccess($w['access']));
-        usort($widgets, static fn($a, $b) => $a['order'] <=> $b['order']);
         $out = [];
-        foreach ($widgets as $w) {
+        foreach (self::$widgets as $w) {
+            if (!self::canAccess($w['access'])) {
+                continue;
+            }
             try {
                 $html = (string) ($w['render'])();
             } catch (Throwable $e) {
@@ -281,7 +313,7 @@ final class Plugins
                 continue;
             }
             if (trim($html) !== '') {
-                $out[] = ['title' => $w['title'], 'html' => $html, 'plugin' => $w['plugin']];
+                $out[$w['key']] = ['key' => $w['key'], 'title' => $w['title'], 'html' => $html, 'plugin' => $w['plugin']];
             }
         }
         return $out;

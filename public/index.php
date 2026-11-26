@@ -54,6 +54,8 @@ $r->post('/setup', [AuthController::class, 'setup']);
 $r->get('/admin', [AdminController::class, 'dashboard']);
 $r->get('/admin/settings', [AdminController::class, 'settings']);
 $r->post('/admin/settings', [AdminController::class, 'saveSettings']);
+$r->post('/admin/settings/sidebar', [AdminController::class, 'saveSidebar']);
+$r->post('/admin/settings/nav', [AdminController::class, 'saveNav']);
 $r->get('/admin/account', [AdminController::class, 'account']);
 $r->post('/admin/account', [AdminController::class, 'saveAccount']);
 

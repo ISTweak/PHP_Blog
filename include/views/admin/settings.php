@@ -1,4 +1,11 @@
-<?php /** @var array $settings */ ?>
+<?php
+/**
+ * @var array $settings
+ * @var array $sidebar   Layout::sidebar()
+ * @var array $navLinks  Plugins::navDefs()
+ * @var array $hiddenNav Layout::hiddenNav()
+ */
+?>
 <div class="adm-head">
   <h1 class="adm-head__title">サイト設定</h1>
 </div>
@@ -34,6 +41,49 @@
     </div>
     <button class="btn btn--primary" type="submit">保存</button>
   </form>
+</section>
+
+<section class="panel panel--narrow" id="sidebar">
+  <h2 class="panel__title">サイドバー</h2>
+  <p class="muted small">↑↓ で表示する順番を、チェックで表示・非表示を変えられます。後から有効にしたプラグインの項目は一番下に追加されます。</p>
+  <form method="post" action="<?= e(url('/admin/settings/sidebar')) ?>">
+    <?= csrf_field() ?>
+    <ol class="order-list" data-order-list>
+      <?php foreach ($sidebar as $b): ?>
+        <li class="order-list__item">
+          <input type="hidden" name="order[]" value="<?= e($b['key']) ?>">
+          <label class="check order-list__label">
+            <input type="checkbox" name="visible[]" value="<?= e($b['key']) ?>"<?= $b['visible'] ? ' checked' : '' ?>>
+            <span><?= e($b['title']) ?> <span class="muted small">（<?= e($b['source']) ?>）</span></span>
+          </label>
+          <span class="order-list__buttons">
+            <button type="button" class="btn btn--sm" data-move="up" aria-label="「<?= e($b['title']) ?>」を上へ">↑</button>
+            <button type="button" class="btn btn--sm" data-move="down" aria-label="「<?= e($b['title']) ?>」を下へ">↓</button>
+          </span>
+        </li>
+      <?php endforeach; ?>
+    </ol>
+    <button class="btn btn--primary" type="submit">保存</button>
+  </form>
+</section>
+
+<section class="panel panel--narrow" id="nav">
+  <h2 class="panel__title">ヘッダーのメニュー</h2>
+  <?php if (!$navLinks): ?>
+    <p class="muted small">ヘッダーにリンクを追加している、有効なプラグインはありません。</p>
+  <?php else: ?>
+    <p class="muted small">プラグインが追加するヘッダーのリンクのうち、表示するものにチェックを付けてください。</p>
+    <form method="post" action="<?= e(url('/admin/settings/nav')) ?>">
+      <?= csrf_field() ?>
+      <?php foreach ($navLinks as $l): ?>
+        <label class="check">
+          <input type="checkbox" name="shown[]" value="<?= e($l['key']) ?>"<?= in_array($l['key'], $hiddenNav, true) ? '' : ' checked' ?>>
+          <span><?= e($l['label']) ?> <span class="muted small">（<?= e($l['pluginName']) ?> ・ <?= e($l['path']) ?>）</span></span>
+        </label>
+      <?php endforeach; ?>
+      <button class="btn btn--primary nav-save" type="submit">保存</button>
+    </form>
+  <?php endif; ?>
 </section>
 
 <section class="panel panel--narrow">

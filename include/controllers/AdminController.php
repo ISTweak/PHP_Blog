@@ -72,7 +72,31 @@ final class AdminController
                 'posts_per_page'     => App::setting('posts_per_page'),
                 'comment_moderation' => App::setting('comment_moderation'),
             ],
+            'sidebar'   => Layout::sidebar(),
+            'navLinks'  => Plugins::navDefs(),
+            'hiddenNav' => Layout::hiddenNav(),
         ], 'admin/layout');
+    }
+
+    /** サイドバーの項目の並び順・表示 */
+    public function saveSidebar(): void
+    {
+        require_role('admin');
+        $strings = static fn($v): array => array_values(array_filter((array) $v, 'is_string'));
+        Layout::saveSidebar($strings($_POST['order'] ?? []), $strings($_POST['visible'] ?? []));
+        flash('success', 'サイドバーの設定を保存しました。');
+        header('Location: ' . url('/admin/settings') . '#sidebar', true, 303);
+        exit;
+    }
+
+    /** ヘッダーに表示するプラグインのリンク */
+    public function saveNav(): void
+    {
+        require_role('admin');
+        Layout::saveNav(array_values(array_filter((array) ($_POST['shown'] ?? []), 'is_string')));
+        flash('success', 'ヘッダーのメニューの設定を保存しました。');
+        header('Location: ' . url('/admin/settings') . '#nav', true, 303);
+        exit;
     }
 
     public function saveSettings(): void
