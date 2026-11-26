@@ -12,6 +12,8 @@ PHP 8.3 + SQLite のシンプルなブログです。フレームワークは使
 
 ```
 blog/
+├─ README.md            このファイル
+├─ LICENSE              MIT ライセンス
 ├─ public/              ← ドキュメントルート（ここだけを Web に公開する）
 │  ├─ index.php         すべてのリクエストを受けるフロントコントローラー
 │  ├─ .htaccess
@@ -20,7 +22,6 @@ blog/
    ├─ config.php        設定（config.sample.php をコピーして作成）
    ├─ bootstrap.php
    ├─ schema.sql        DB スキーマ（初回アクセス時に自動作成・更新）
-   ├─ README.md         このファイル
    ├─ lib/              共通クラス
    ├─ controllers/      画面ごとの処理
    ├─ views/            HTML テンプレート
@@ -135,3 +136,7 @@ WordPress のクラシックエディター（テキストモード）に近い�
 - パスワードは `password_hash()` で保存しています。
 - Content-Security-Policy でインラインスクリプトを禁止しています。
 - 会員限定サイトは `noindex` を出力し、検索エンジンに登録されないようにしています。
+
+## ライセンス
+
+[MIT License](LICENSE)
