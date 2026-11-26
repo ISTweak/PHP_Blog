@@ -1,0 +1,97 @@
+/* 試合日程・結果プラグイン */
+
+/* 勝敗バッジ・得点 */
+.bb-res { display: inline-flex; align-items: center; justify-content: center; min-width: 2em; padding: .05em .5em; border-radius: var(--radius-sm); font-size: .8rem; font-weight: 700; line-height: 1.7; white-space: nowrap; }
+.bb-res--win { color: #fff; background: #1d4ed8; }
+.bb-res--lose { color: #fff; background: #b91c1c; }
+.bb-res--draw { color: #fff; background: #71717a; }
+.bb-res--off { color: #854d0e; background: #fef3c7; }
+.bb-res--none { color: var(--c-muted); background: #f4f4f5; font-weight: 600; }
+.bb-score { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bb-comp { display: inline-block; padding: .05em .5em; border-radius: var(--radius-sm); font-size: .75rem; font-weight: 600; color: var(--c-muted); background: #f4f4f5; white-space: nowrap; }
+.bb-comp--light { color: #e4e4e7; background: rgba(255, 255, 255, .14); }
+
+/* 次の試合 */
+.bb-next { margin-bottom: 1.75rem; padding: 1.4rem 1.5rem; border-radius: var(--radius); background: var(--c-ink); color: #fff; }
+.bb-next__label { margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .12em; color: #a1a1aa; }
+.bb-next__date { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .3rem 0 .6rem; font-size: 1.05rem; font-weight: 600; }
+.bb-next__match { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem .8rem; margin: 0 0 .6rem; font-size: 1.5rem; font-weight: 700; line-height: 1.35; }
+.bb-next__vs { font-size: .9rem; color: #a1a1aa; }
+.bb-next__meta { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; font-size: .9rem; color: #d4d4d8; }
+.bb-next__comment { margin: .8rem 0 0; font-size: .9rem; color: #e4e4e7; }
+
+/* 一覧 */
+.bb-section { margin-bottom: 2rem; }
+.bb-section__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .75rem; }
+.bb-section__title { margin: 0 0 .75rem; font-size: 1.15rem; }
+.bb-section__head .bb-section__title { margin: 0; }
+.bb-year { display: flex; gap: .4rem; align-items: center; }
+.bb-year .form-control { width: auto; padding-top: .3em; padding-bottom: .3em; }
+
+.bb-list { margin: 0; padding: 0; list-style: none; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+.bb-game { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto; gap: .2rem 1rem; align-items: start; padding: .85rem 1rem; border-top: 1px solid var(--c-border); border-left: 4px solid transparent; }
+.bb-game:first-child { border-top: 0; }
+.bb-game--win { border-left-color: #1d4ed8; }
+.bb-game--lose { border-left-color: #b91c1c; }
+.bb-game--draw { border-left-color: #71717a; }
+.bb-game--off { opacity: .75; }
+.bb-game__when { display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.bb-game__date { font-weight: 700; }
+.bb-game__time { font-size: .82rem; color: var(--c-muted); }
+.bb-game__main { min-width: 0; }
+.bb-game__match { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .5rem; margin: 0; }
+.bb-game__vs { font-weight: 700; }
+.bb-game__venue { margin: .15rem 0 0; font-size: .85rem; color: var(--c-muted); }
+.bb-game__comment { margin: .35rem 0 0; font-size: .88rem; }
+.bb-game__post { margin: .35rem 0 0; font-size: .85rem; }
+.bb-game__result { display: flex; align-items: center; gap: .5rem; justify-self: end; font-size: 1.1rem; }
+@media (max-width: 600px) {
+  .bb-game { grid-template-columns: minmax(0, 1fr) auto; }
+  .bb-game__when { grid-column: 1 / -1; flex-direction: row; gap: .5rem; }
+  .bb-next__match { font-size: 1.25rem; }
+}
+
+/* 年間成績 */
+.bb-record { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; margin: 0 0 1rem; }
+.bb-record > div { padding: .55rem .4rem; text-align: center; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
+.bb-record dt { font-size: .78rem; font-weight: 600; color: var(--c-muted); }
+.bb-record dd { margin: 0; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bb-record--win dd { color: #1d4ed8; }
+.bb-record--lose dd { color: #b91c1c; }
+
+/* サイドバー */
+.bb-w-next { margin-bottom: .75rem; padding: .7rem .85rem; border-radius: var(--radius-sm); background: #f4f4f5; }
+.bb-w-next p { margin: 0; }
+.bb-w-next__label { font-size: .75rem; font-weight: 700; color: var(--c-muted); }
+.bb-w-next__date { font-weight: 700; }
+.bb-w-next__vs { font-size: 1.05rem; font-weight: 700; }
+.bb-w-next__venue { font-size: .82rem; color: var(--c-muted); }
+.bb-w-list { margin: 0 0 .6rem; padding: 0; list-style: none; }
+.bb-w-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: .45rem; align-items: center; padding: .45rem 0; border-top: 1px solid var(--c-border); font-size: .88rem; }
+.bb-w-list li:first-child { border-top: 0; }
+.bb-w-list__date { color: var(--c-muted); font-variant-numeric: tabular-nums; }
+.bb-w-list__vs { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bb-w-record { margin: 0; font-size: .88rem; font-weight: 600; }
+.bb-w-more { margin: .4rem 0 0; font-size: .85rem; text-align: right; }
+
+/* 管理画面 */
+.bb-status { display: flex; flex-wrap: wrap; gap: .2rem 1rem; margin: 0 0 .75rem; padding: 0; border: 0; }
+.bb-status legend { width: 100%; }
+.bb-status .check { margin: 0; }
+.bb-scores { display: flex; align-items: flex-end; gap: .75rem; }
+.bb-scores .form-row { margin-bottom: .4rem; }
+.bb-scores__dash { padding-bottom: 1rem; font-weight: 700; }
+.bb-scores.is-disabled { opacity: .5; }
+.bb-admin-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .75rem; }
+.bb-admin-record { margin: 0; font-weight: 600; }
+.bb-team { margin-top: 1.25rem; }
+.table tr.is-editing td { background: var(--c-primary-soft); }
+.bb-admin-table .table__title { min-width: 0; }
+.bb-admin-table .table__title .bb-comp { margin-left: .25rem; }
+.bb-admin-table td.actions { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; }
+.bb-admin-table td.actions .btn + .inline-form { margin-left: 0; }
+.bb-admin-table td.actions .btn { width: 100%; }
+@media (max-width: 700px) {
+  .bb-admin-table td.actions { flex-direction: row; }
+  .bb-admin-table td.actions .btn { width: auto; }
+}
