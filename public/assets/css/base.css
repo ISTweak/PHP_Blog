@@ -208,3 +208,16 @@ a.pagination__item:hover { border-color: var(--c-ink); color: var(--c-ink); }
 @media (max-width: 600px) {
   .entry-content .alignleft, .entry-content .alignright { float: none; display: block; max-width: 100%; margin: 0 auto 1em; }
 }
+.entry-content .gallery a[hidden] { display: none; }
+.entry-content .gallery--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.entry-content .gallery--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.entry-content .gallery--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.entry-content .gallery--cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.entry-content .gallery--cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.entry-content .gallery--cols-1 { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 600px) {
+  .entry-content .gallery--cols-4, .entry-content .gallery--cols-5, .entry-content .gallery--cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.entry-content .gallery-info { margin: -.6em 0 .2em; font-size: .85rem; color: var(--c-muted); text-align: center; }
+.entry-content .gallery-nav { margin: .4rem 0 1.6rem; }
+.entry-content .gallery-nav button.pagination__item { font: inherit; cursor: pointer; }

@@ -293,3 +293,19 @@
 .plugin-card__desc { margin: 0 0 .3rem; font-size: .92rem; }
 .plugin-card__meta { margin: 0; }
 .plugin-card .alert { margin: .6rem 0 0; }
+
+/* ---------- ギャラリー作成（メディアの複数選択） ---------- */
+.editor__media { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pick__img { position: relative; }
+.pick__order {
+  position: absolute; top: 6px; right: 6px;
+  display: none; align-items: center; justify-content: center;
+  min-width: 26px; height: 26px; padding: 0 6px;
+  border-radius: 999px; background: var(--c-primary); color: #fff;
+  font-size: .8rem; font-weight: 700; box-shadow: 0 0 0 2px #fff;
+}
+.pick.is-selected { border-color: var(--c-primary); box-shadow: 0 0 0 2px var(--c-primary); }
+.pick.is-selected .pick__order { display: inline-flex; }
+.pick.is-selected .pick__img img { opacity: .85; }
+.modal__count { font-weight: 700; }
+.modal__foot .btn--primary { margin-left: auto; }

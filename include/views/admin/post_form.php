@@ -37,10 +37,16 @@ $action = $isNew ? url('/admin/posts/new') : url('/admin/posts/' . (int) $post['
 
     <div class="editor" data-editor>
       <div class="editor__bar">
+        <div class="editor__media">
         <button type="button" class="btn btn--sm" data-media-open="insert">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm1 2v8.6l4-4 3 3 2-2 5 5V7H5Zm10.5 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/></svg>
           メディアを追加
         </button>
+        <button type="button" class="btn btn--sm" data-media-open="gallery">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8-2h8v8h-8v-8Zm2 2v4h4v-4h-4Z"/></svg>
+          ギャラリー
+        </button>
+        </div>
         <div class="editor__tabs" role="tablist">
           <button type="button" class="editor__tab is-active" role="tab" aria-selected="true" data-editor-tab="code">コード</button>
           <button type="button" class="editor__tab" role="tab" aria-selected="false" data-editor-tab="preview">プレビュー</button>
@@ -54,6 +60,7 @@ $action = $isNew ? url('/admin/posts/new') : url('/admin/posts/' . (int) $post['
     </div>
     <p class="form-help">
       空行で段落が分かれ、改行はそのまま改行になります。YouTube の URL を 1 行だけで書くと動画が埋め込まれます。
+      「ギャラリー」で複数の画像を選ぶと <code>[gallery ids="…"]</code> が入り、写真の一覧として表示されます。
     </p>
   </div>
 

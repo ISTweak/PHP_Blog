@@ -18,9 +18,91 @@
     });
   }
 
-  /* ---------- 画像の拡大表示（ライトボックス） ---------- */
   const article = document.querySelector('.entry');
   if (!article) return;
+
+  /* ---------- ギャラリーのページ送り ---------- */
+  const galleries = [];
+
+  function setupGallery(gallery) {
+    const items = [...gallery.children].filter((el) => el.tagName === 'A');
+    const cols = Number((gallery.className.match(/gallery--cols-(\d)/) || [])[1]) || 4;
+    const perPage = cols * 6;                       // 6 段分
+    if (items.length <= perPage) return;
+
+    const pages = Math.ceil(items.length / perPage);
+    const nav = document.createElement('nav');
+    nav.className = 'pagination gallery-nav';
+    nav.setAttribute('aria-label', 'ギャラリーのページ');
+    const info = document.createElement('p');
+    info.className = 'gallery-info';
+    info.setAttribute('aria-live', 'polite');
+    gallery.after(info, nav);
+
+    const state = { gallery, items, perPage, pages, current: 1 };
+
+    function button(label, page, { current = false, aria = '' } = {}) {
+      const b = document.createElement(current ? 'span' : 'button');
+      b.className = `pagination__item${current ? ' is-current' : ''}`;
+      b.textContent = label;
+      if (current) {
+        b.setAttribute('aria-current', 'page');
+      } else {
+        b.type = 'button';
+        b.addEventListener('click', () => show(page, true));
+      }
+      if (aria) b.setAttribute('aria-label', aria);
+      return b;
+    }
+
+    function gap() {
+      const s = document.createElement('span');
+      s.className = 'pagination__gap';
+      s.textContent = '…';
+      return s;
+    }
+
+    function show(page, scroll) {
+      state.current = Math.min(Math.max(1, page), pages);
+      const start = (state.current - 1) * perPage;
+      items.forEach((a, i) => { a.hidden = i < start || i >= start + perPage; });
+      info.textContent = `${start + 1}〜${Math.min(start + perPage, items.length)} 枚目 / 全 ${items.length} 枚`;
+
+      const parts = [];
+      if (state.current > 1) parts.push(button('‹', state.current - 1, { aria: '前のページ' }));
+      const from = Math.max(1, state.current - 2);
+      const to = Math.min(pages, state.current + 2);
+      if (from > 1) parts.push(button('1', 1));
+      if (from > 2) parts.push(gap());
+      for (let p = from; p <= to; p += 1) parts.push(button(String(p), p, { current: p === state.current }));
+      if (to < pages - 1) parts.push(gap());
+      if (to < pages) parts.push(button(String(pages), pages));
+      if (state.current < pages) parts.push(button('›', state.current + 1, { aria: '次のページ' }));
+      nav.replaceChildren(...parts);
+
+      // ページを切り替えたら、ギャラリーの先頭が見える位置へ
+      if (scroll && gallery.getBoundingClientRect().top < 0) {
+        gallery.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
+    }
+
+    state.show = show;
+    galleries.push(state);
+    show(1, false);
+  }
+
+  /** 拡大表示を閉じたとき、最後に見た写真があるページに合わせる */
+  function revealInGallery(el) {
+    const g = galleries.find((s) => s.items.includes(el));
+    if (!g) return;
+    const page = Math.floor(g.items.indexOf(el) / g.perPage) + 1;
+    if (page !== g.current) g.show(page, false);
+    el.scrollIntoView({ block: 'nearest' });
+  }
+
+  article.querySelectorAll('.entry-content .gallery').forEach(setupGallery);
+
+  /* ---------- 画像の拡大表示（ライトボックス） ---------- */
 
   const MEDIA_RE = /\/media\/(\d+)(?:\/(?:thumb|medium))?(?:[?#].*)?$/;
   const IMAGE_RE = /\.(?:jpe?g|png|gif|webp)(?:[?#].*)?$/i;
@@ -157,7 +239,11 @@
     box.hidden = true;
     document.body.classList.remove('lb-open');
     ui.img.removeAttribute('src');
-    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+    const viewed = items[index] && items[index].el;
+    if (viewed) revealInGallery(viewed);
+    // 最後に見た写真にフォーカスを戻す（ページ送りで隠れていない場合）
+    const focusTo = viewed && !viewed.hidden ? viewed : lastFocus;
+    if (focusTo && typeof focusTo.focus === 'function') focusTo.focus({ preventScroll: true });
   }
 
   document.addEventListener('click', (e) => {

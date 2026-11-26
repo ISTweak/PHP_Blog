@@ -181,6 +181,8 @@
   const MediaPicker = (() => {
     let modal; let grid; let moreBtn; let statusEl; let footer; let titleEl; let filterBar;
     let sizeSel; let alignSel; let linkChk; let closeBtn;
+    let galleryFoot; let galleryCount; let galleryCols; let galleryInsert;
+    let selected = [];          // ギャラリー用に選んだメディア（選んだ順）
     let page = 1;
     let kind = '';
     let mode = 'insert';
@@ -218,14 +220,27 @@
         h('label', { class: 'check' }, linkChk, '元画像にリンク'),
         h('span', { class: 'modal__hint', text: 'クリックで本文に挿入' }));
 
-      titleEl = h('h2', { class: 'modal__title', id: 'media-modal-title', text: 'メディア' });
+      // ギャラリー作成時のフッター（複数選択）
+      galleryCount = h('span', { class: 'modal__count', 'aria-live': 'polite', text: '0 枚選択' });
+      galleryCols = h('select', {},
+        h('option', { value: '', text: '自動' }),
+        ...[2, 3, 4, 5, 6].map((n) => h('option', { value: String(n), text: `${n} 列` })));
+      galleryInsert = h('button', { type: 'button', class: 'btn btn--primary btn--sm', disabled: true, text: 'ギャラリーを挿入', onclick: insertGallery });
+      galleryFoot = h('div', { class: 'modal__foot', hidden: true },
+        galleryCount,
+        h('label', {}, '列数 ', galleryCols),
+        h('button', { type: 'button', class: 'btn btn--sm', text: '選択を解除', onclick: () => { selected = []; refreshSelection(); } }),
+        h('span', { class: 'modal__hint', text: 'クリックで選択（選んだ順に並びます）' }),
+        galleryInsert);
+
+      titleEl =h('h2', { class: 'modal__title', id: 'media-modal-title', text: 'メディア' });
       closeBtn = h('button', { type: 'button', class: 'modal__close', 'aria-label': '閉じる', text: '×', onclick: close });
       modal = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'media-modal-title', hidden: true },
         h('div', { class: 'modal__backdrop', onclick: close }),
         h('div', { class: 'modal__panel' },
           h('div', { class: 'modal__head' }, titleEl, closeBtn),
           h('div', { class: 'modal__body' }, zone, statusEl, filterBar, grid, h('div', { class: 'modal__more' }, moreBtn)),
-          footer));
+          footer, galleryFoot));
       body.append(modal);
 
       fileInput.addEventListener('change', () => {
@@ -241,8 +256,8 @@
 
     function renderFilters() {
       filterBar.replaceChildren();
-      filterBar.hidden = mode === 'eyecatch';
-      if (mode === 'eyecatch') return;
+      filterBar.hidden = mode !== 'insert';
+      if (mode !== 'insert') return;
       [['', 'すべて'], ['image', '画像'], ['video', '動画'], ['file', 'PDF']].forEach(([k, label]) => {
         filterBar.append(h('button', {
           type: 'button',
@@ -262,9 +277,30 @@
       } else {
         visual = h('span', { class: 'media-card__icon', text: 'PDF' });
       }
-      return h('button', { type: 'button', class: 'pick', title: `${m.name}（${m.sizeLabel}）`, onclick: () => pick(m) },
-        h('span', { class: 'pick__img' }, visual),
+      return h('button', { type: 'button', class: 'pick', 'data-id': m.id, title: `${m.name}（${m.sizeLabel}）`, onclick: () => pick(m) },
+        h('span', { class: 'pick__img' }, visual, h('span', { class: 'pick__order', 'aria-hidden': 'true' })),
         h('span', { class: 'pick__name', text: m.name }));
+    }
+
+    /** ギャラリー用の選択状態を画面に反映（選んだ順の番号を表示） */
+    function refreshSelection() {
+      grid.querySelectorAll('.pick').forEach((el) => {
+        const i = selected.indexOf(Number(el.dataset.id));
+        el.classList.toggle('is-selected', i !== -1);
+        el.setAttribute('aria-pressed', String(i !== -1));
+        el.querySelector('.pick__order').textContent = i !== -1 ? String(i + 1) : '';
+      });
+      galleryCount.textContent = `${selected.length} 枚選択`;
+      galleryInsert.disabled = selected.length === 0;
+    }
+
+    function insertGallery() {
+      if (!selected.length) return;
+      const cb = onPick;
+      const ids = selected.slice();
+      const columns = galleryCols.value;
+      close();
+      if (cb) cb(ids, { columns });
     }
 
     async function load(reset) {
@@ -281,6 +317,7 @@
         if (kind) u.searchParams.set('kind', kind);
         const data = await request(u.toString());
         data.items.forEach((m) => grid.append(card(m)));
+        if (mode === 'gallery') refreshSelection();
         if (!grid.children.length) {
           grid.append(h('p', { class: 'pick-empty', text: 'メディアがありません。上の枠からアップロードしてください。' }));
         }
@@ -295,15 +332,26 @@
 
     function handleFiles(files) {
       uploadFiles(files, statusEl, (m) => {
-        if (mode === 'eyecatch' && m.kind !== 'image') return;
+        if (mode !== 'insert' && m.kind !== 'image') return;
         if (kind && m.kind !== kind) return;
         grid.querySelector('.pick-empty')?.remove();
         grid.prepend(card(m));
+        if (mode === 'gallery') {
+          // アップロードした画像は選択済みにする
+          selected.push(m.id);
+          refreshSelection();
+        }
       });
     }
 
     function pick(m) {
-      if (mode === 'eyecatch' && m.kind !== 'image') return;
+      if (mode !== 'insert' && m.kind !== 'image') return;
+      if (mode === 'gallery') {
+        const i = selected.indexOf(m.id);
+        if (i === -1) selected.push(m.id); else selected.splice(i, 1);
+        refreshSelection();
+        return;
+      }
       const cb = onPick;
       const opts = { size: sizeSel.value, align: alignSel.value, link: linkChk.checked };
       close();
@@ -315,9 +363,13 @@
       lastFocus = document.activeElement;
       mode = options.mode;
       onPick = options.onPick;
-      kind = mode === 'eyecatch' ? 'image' : '';
-      titleEl.textContent = mode === 'eyecatch' ? 'アイキャッチ画像を選択' : 'メディアを追加';
-      footer.hidden = mode === 'eyecatch';
+      kind = mode === 'insert' ? '' : 'image';
+      titleEl.textContent = { eyecatch: 'アイキャッチ画像を選択', gallery: 'ギャラリーを作成' }[mode] || 'メディアを追加';
+      footer.hidden = mode !== 'insert';
+      galleryFoot.hidden = mode !== 'gallery';
+      selected = [];
+      galleryCols.value = '';
+      refreshSelection();
       statusEl.replaceChildren();
       renderFilters();
       modal.hidden = false;
@@ -474,6 +526,14 @@
     // メディアを追加
     root.querySelector('[data-media-open="insert"]')?.addEventListener('click', () => {
       MediaPicker.open({ mode: 'insert', onPick: (m, o) => insertBlock(mediaSnippet(m, o)) });
+    });
+
+    // ギャラリー（WordPress と同じ [gallery ids="..."] 形式で挿入）
+    root.querySelector('[data-media-open="gallery"]')?.addEventListener('click', () => {
+      MediaPicker.open({
+        mode: 'gallery',
+        onPick: (ids, o) => insertBlock(`[gallery ids="${ids.join(',')}"${o.columns ? ` columns="${o.columns}"` : ''}]`),
+      });
     });
 
     // コード / プレビュー切り替え

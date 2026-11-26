@@ -80,9 +80,43 @@ final class Html
     public static function render(string $source): string
     {
         $text = str_replace(["\r\n", "\r"], "\n", $source);
+        $text = self::galleries($text);
         $text = self::embedYoutube($text);
         $text = self::autop($text);
         return self::sanitize($text);
+    }
+
+    /**
+     * [gallery ids="1,2,3" columns="4"] を画像の一覧に変換（WordPress と同じ書き方）。
+     * 存在しない・画像ではないメディアは除く。
+     */
+    public static function galleries(string $text): string
+    {
+        if (!str_contains($text, '[gallery')) {
+            return $text;
+        }
+        return (string) preg_replace_callback('/\[gallery\b([^\]]*)\]/', static function (array $m): string {
+            $ids = preg_match('/\bids\s*=\s*"?([\d,\s]+)"?/', $m[1], $x)
+                ? array_values(array_unique(array_filter(array_map('intval', explode(',', $x[1])))))
+                : [];
+            if (!$ids) {
+                return '';
+            }
+            $in = implode(',', array_fill(0, count($ids), '?'));
+            $images = array_flip(array_map('intval', array_column(
+                db_all("SELECT id FROM media WHERE kind = 'image' AND id IN ($in)", $ids), 'id')));
+            $items = '';
+            foreach ($ids as $id) {
+                if (isset($images[$id])) {
+                    $items .= '<a href="/media/' . $id . '"><img src="/media/' . $id . '/thumb" alt=""></a>';
+                }
+            }
+            if ($items === '') {
+                return '';
+            }
+            $cols = preg_match('/\bcolumns\s*=\s*"?(\d)/', $m[1], $c) ? max(1, min(6, (int) $c[1])) : 0;
+            return "\n\n<div class=\"gallery" . ($cols ? " gallery--cols-$cols" : '') . "\">$items</div>\n\n";
+        }, $text);
     }
 
     /** 1 行に YouTube の URL だけが書かれている場合、埋め込みプレーヤーに変換 */
@@ -265,6 +299,7 @@ final class Html
     public static function excerpt(string $source, int $length = 110): string
     {
         $text = (string) preg_replace('#<(script|style)[^>]*>.*?</\1>#is', '', $source);
+        $text = (string) preg_replace('/\[gallery\b[^\]]*\]/', ' ', $text);
         $text = (string) preg_replace('#<(br|/p|/li|/h[1-6]|/div|/blockquote)[^>]*>#i', ' ', $text);
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = (string) preg_replace('#https?://\S+#u', '', $text);
