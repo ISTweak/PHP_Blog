@@ -4,7 +4,6 @@ $siteName = site_name_text();
 $siteDesc = App::setting('site_description');
 $user = current_user();
 $showNav = !App::isPrivate() || $user !== null;
-$navCats = $showNav ? Repo::categories() : [];
 $pageTitle = isset($title) && $title !== '' && $title !== null ? $title . ' | ' . $siteName : $siteName;
 ?>
 <!DOCTYPE html>
@@ -38,9 +37,6 @@ $pageTitle = isset($title) && $title !== '' && $title !== null ? $title . ' | ' 
     <nav class="site-nav" id="site-nav" aria-label="メインメニュー">
       <ul class="site-nav__list">
         <li><a class="site-nav__link" href="<?= e(url('/')) ?>">ホーム</a></li>
-        <?php foreach ($navCats as $c): ?>
-          <li><a class="site-nav__link" href="<?= e(category_url($c['slug'])) ?>"><?= e($c['name']) ?></a></li>
-        <?php endforeach; ?>
         <?php foreach (Plugins::navLinks() as $link): ?>
           <li><a class="site-nav__link" href="<?= e(url($link['path'])) ?>"><?= e($link['label']) ?></a></li>
         <?php endforeach; ?>
